@@ -43,11 +43,13 @@ def calculate_scheduled_investment(data: pd.DataFrame) -> ():
         #   如果不购买，append前日仓位和花费
         #   然后总需要根据open_price计算asset, 并且加入assets
         if is_monday(date):
-            positions.append(positions[-1] + 10)
+            positions.append(positions[-1] + shares)
+            cost.append(cost[-1] + shares * open_price)
         else:
             positions.append(positions[-1])
+            cost.append(cost[-1])
         assets.append(open_price * positions[-1])
-    print(len(positions))
+
     return positions, cost, assets
 
 
@@ -56,12 +58,12 @@ def calculate_scheduled_investment(data: pd.DataFrame) -> ():
 
 # -- TODO: Part 2 (START)
 def export_result() -> float:
-    # 生成 {first_name}_QQQ-result.csv, 目标是跟QQQ-result-expected.csv 一致
-    # 在这里调用 calculate_scheduled_investment, 并且赋值
-    # 到asset 和cost.
-    # 最后返回十年的年化率
-    asset = [1]  # replace
-    cost = [1]  # replace
+    # Calculate positions, cost, and assets using calculate_scheduled_investment()
+    positions, cost, asset = calculate_scheduled_investment(read_data())
+
+    # Export positions, cost, and assets to a CSV file
+    result_data = pd.DataFrame({'Position': positions, 'Cost': cost, 'Asset': asset})
+    write_data(result_data, ANALYSIS_RESULT_DATA_NAME)
     return annual_return(10, asset[-1] / cost[-1])  # 10 years
 
 
@@ -70,13 +72,29 @@ def export_result() -> float:
 # -- TODO: Part 3 (START)
 # -- Recommend to copy and write to a new .csv file, so we will not mix Part 3 with Part 1 or 2
 def calculate_scheduled_investment_fixed_cost(data: pd.DataFrame) -> ():
-    pass
+    positions = [0.0]
+    cost = [0.0]
+    assets = [0.0]
+    for i in range(1,len(data)):
+        open_price = data.iloc[i]['OPEN']
+        date = data.iloc[i]['DATES']
+        if is_monday(date):
+            positions.append(positions[-1]+1000/open_price)
+            cost.append(cost[-1] + 1000)
+        else:
+            positions.append(positions[-1])
+            cost.append(cost[-1])
+        assets.append((open_price*positions[-1]))
 
-
+    return positions,cost,assets
 def get_annual_return_fixed_cost() -> float:
-    pass
 
+    data = read_data()
+    positions, cost, assets = calculate_scheduled_investment_fixed_cost(data)
+    result_data = pd.DataFrame({'Position': positions, 'Cost': cost, 'Asset': assets})
+    write_data(result_data, ANALYSIS_FIXED_RESULT_DATA_NAME)
 
+    return annual_return(10, assets[-1] / cost[-1])
 # -- TODO: Part 3 (END)
 
 
@@ -91,13 +109,37 @@ def calculate_scheduled_investment_fixed_cost_with_sell(data: pd.DataFrame,
     :param sell_percentage: e.g. we can sell 25%.
     :return:
     """
-    pass
-
-
+    positions = [0.0]
+    cost = [0.0]
+    assets = [0.0]
+    for i in range(1, len(data)):
+        open_price = data.iloc[i]['open']
+        date = data.iloc[i]['Date']
+        if is_monday(date):
+            positions.append(positions[-1] + 1000 / open_price)
+            cost.append(cost[-1] + 1000)
+        else:
+            positions.append(positions[-1])
+            cost.append(cost[-1])
+        assets.append((open_price * positions[-1]))
+        # Check if the assets reach the sell point
+        if assets[-1] >= sell_point * cost[-1]:
+            # Calculate the sell amount based on the sell percentage
+            sell_amount = sell_percentage * positions[-1]
+            # Update positions, cost, and assets accordingly
+            positions[-1] -= sell_amount
+            cost[-1] -= sell_amount * open_price
+            assets[-1] -= sell_amount * open_price
+    return positions, cost, assets
 def get_annual_return_fixed_cost_with_sell() -> float:
-    pass
+    data = read_data()
+    sell_point = 2  # Sell when the assets reach double the cost
+    sell_percentage = 0.25  # Sell 25% of the positions
+    positions, cost, assets = calculate_scheduled_investment_fixed_cost_with_sell(data, sell_point, sell_percentage)
+    result_data = pd.DataFrame({'Position': positions, 'Cost': cost, 'Asset': assets})
+    write_data(result_data, ANALYSIS_FIXED_SELL_RESULT_DATA_NAME)
 
-
+    return annual_return(10, assets[-1] / cost[-1])
 # -- TODO: Part 4 (END)
 
 
@@ -124,5 +166,6 @@ def print_inflation_adjust_annual_returns() -> (float, float, float):
 
 
 if __name__ == '__main__':
-    print(calculate_scheduled_investment(read_data()))
-    print("Investment Return: ", export_result())
+    print(calculate_scheduled_investment_fixed_cost(read_data()))
+    print("Investment Return: ", get_annual_return_fixed_cost())
+
