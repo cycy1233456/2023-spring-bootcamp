@@ -5,6 +5,11 @@ from typing import Tuple
 
 
 def is_prime(n: int) -> bool:
+    if n <= 1:
+        return False
+    for i in range(2 , int(pow(n , 0.5))+1):
+        if n % i == 0:    #从2到sqrt(n)看余数 余数为0则被整除
+            return False
     return True
 
 
@@ -19,8 +24,9 @@ assert is_prime(7907)
 # Output [3,4,5,6,7,1,2]
 
 def rotate(ar: [int], d: int) -> [int]:
-    return []
-
+    ar_len = len(ar)
+    k = d % ar_len
+    return ar[k:ar_len] + ar[0:k]
 
 # DO NOT ALTER BELOW.
 assert rotate([1, 2, 3, 4, 5, 6, 7], 2) == [3, 4, 5, 6, 7, 1, 2]
@@ -31,8 +37,20 @@ assert rotate([1, 2, 3], 4) == [2, 3, 1]
 # https://www.runoob.com/w3cnote/selection-sort.html 作为参考
 # Input students would be a list of [student #, score], sort by score ascending order.
 
+def by_score(t):
+    return t[1]
 def selection_sort(arr: [[int]]) -> [[int]]:
+    return sorted(arr,key=by_score)
+
+def selection_sort1(arr: [[int]]) -> [[int]]:
+    for i in range(len(arr)):
+        min_index = i
+        for j in range(i+1, len(arr)):
+            if arr[j][1] < arr[min_index][1]:
+                min_index = j
+        arr[i],arr[min_index] = arr[min_index],arr[i]
     return arr
+
 
 
 # DO NOT ALTER BELOW.
@@ -43,10 +61,18 @@ assert selection_sort([[1, 100], [2, 70], [3, 95], [4, 66], [5, 98]]) == [[4, 66
 # Q4. Convert a list of Tuples into Dictionary
 # tip: copy operation - copy by value, copy by reference
 
-def convert(tup: (any), di: {any, any}) -> None:
-    pass
+def convert1(tup: (any), di: {any, any}) -> None:
+    keys = tup[::2]
+    values = tup[1::2]
+    for i in range(len(keys)):
+        key = keys[i]
+        value = values[i]
+        di[key] = value
+    return di
     # Do NOT RETURN di, EDIT IN-PLACE
 
+def convert(tup: (any), di: {any, any}) -> None:
+    di.update({tup[i]:tup[i+1] for i in range(0,len(tup),2)})
 
 # DO NOT ALTER BELOW.
 expected_dict = {}
@@ -80,7 +106,38 @@ def create_arr(count: int, dup: int) -> [int]:
 
 # Complete this
 def bsearch(arr: [int], target: int) -> tuple[int, int]:
-    return -1, -1
+    def bsearch_right(arr,target):
+        result = -1
+        left = 0
+        right = len(arr)-1
+        while left <= right:
+            mid = (left + right)//2
+            if arr[mid] < target:
+                left = mid + 1
+            elif arr[mid] > target:
+                right = mid - 1
+            elif arr[mid] == target:
+                result = mid
+                left = mid + 1
+        return result
+
+    def bsearch_left(arr, target):
+        result = -1
+        left = 0
+        right = len(arr) - 1
+        while left <= right:
+            mid = (left + right) // 2
+            if arr[mid] < target:
+                left = mid + 1
+            elif arr[mid] > target:
+                right = mid - 1
+            elif arr[mid] == target:
+                result = mid
+                right = mid - 1
+        return result
+    right_max = bsearch_right(arr,target)
+    left_max = bsearch_left(arr,target)
+    return left_max,right_max
 
 
 assert bsearch_slow(create_arr(10000, 5), 5) == (0, 9999)
@@ -89,8 +146,8 @@ assert bsearch(create_arr(1000, 5), 5) == (0, 999)
 import timeit
 
 # slow version rnning 100 times = ? seconds
-timeit.timeit(lambda: bsearch_slow(create_arr(10000, 5), 5), number=100)
-
+print(timeit.timeit(lambda: bsearch_slow(create_arr(10000, 5), 5), number=100))
+print(timeit.timeit(lambda: bsearch(create_arr(10000, 5), 5), number=100))
 
 # add your version and compare if faster.
 
@@ -105,6 +162,19 @@ y = [4, 5, 6]
 cross(x, y)
 > [12, -6, -3]
 """
+import numpy as np
+x = [1, 2, 0]
+y = [4, 5, 6]
+np.cross(x,y)
+def cross(x, y):
+    if len(x) != 3 or len(y) != 3:
+        raise ValueError("Input lists must have length 3")
+
+    result = [x[1] * y[2] - x[2] * y[1],
+              x[2] * y[0] - x[0] * y[2],
+              x[0] * y[1] - x[1] * y[0]]
+
+    return result
 
 # Q7.
 """
@@ -126,6 +196,30 @@ cross(x, y)
  return a list of True or False.
 checkOrders(["()", "(", "{}[]", "[][][]", "[{]{]"] return [True, False, True, True, False]
 """
+def checkOrders(orders: [str]) -> [bool]:
+    result = []
+    for order in orders:
+        stack = []
+        is_valid = True
+        for char in order:
+            if char in "([{":
+                stack.append(char)
+            elif char in ")]}":
+                if not stack:
+                    is_valid = False
+                    break
+                last_open_bracket = stack.pop()
+                if (char == ")" and last_open_bracket != "(") or \
+                   (char == "]" and last_open_bracket != "[") or \
+                   (char == "}" and last_open_bracket != "{"):
+                    is_valid = False
+                    break
+        if stack:
+            is_valid = False
+        result.append(is_valid)
+    return result
+print(checkOrders(["()", "(", "{}[]", "[][][]", "[{]{]"]))
+
 
 # Q8.
 """
@@ -147,6 +241,24 @@ slowest([[0, 2], [1, 5], [2, 7], [0, 16], [3, 19], [4, 25], [2, 35]]) return 2
 """
 
 
+def slowest(orders: [[int]]) -> int:
+    broker_times = {}  # 存储每个经纪公司的交易时间
+    for order in orders:
+        broker_id, timestamp = order[0], order[1]
+        if broker_id not in broker_times:
+            broker_times[broker_id] = 0
+        broker_times[broker_id] = max(broker_times[broker_id], timestamp)
+
+    slowest_broker = None
+    slowest_time = 0
+    for broker_id, timestamp in broker_times.items():
+        if timestamp > slowest_time:
+            slowest_broker = broker_id
+            slowest_time = timestamp
+
+    return slowest_broker
+
+
 # Q9.
 """
 判断机器人是否能返回原点
@@ -160,7 +272,25 @@ slowest([[0, 2], [1, 5], [2, 7], [0, 16], [3, 19], [4, 25], [2, 35]]) return 2
 def judgeRobotMove(moves: str) -> bool:
 """
 
+def judgeRobotMove(moves: str) -> bool:
+    x, y = 0, 0  # 机器人的坐标
+
+    for move in moves:
+        if move == "U":
+            y += 1
+        elif move == "L":
+            x -= 1
+        elif move == "R":
+            x += 1
+        elif move == "D":
+            y -= 1
+
+    return x == 0 and y == 0
+moves = "LDRRLRUULR"
+assert judgeRobotMove(moves) == False
+
 # Q10.
+
 """
 假设我们获得了一只股票的每日价格, 在这一天可以执行T+1买或卖的操作, 只能做多不能做空，每次只能持仓一股。
 对于给定的价格序列，只能执行最多两次交易，写一个算法计算最高获利可以是多少。
@@ -174,3 +304,25 @@ Input: prices = [1,2,3,4,5,6,7]
 Output: 6
 解释: 7 - 1 = 6 因为只能持仓一股，不能再没有卖出1时购买。
 """
+
+def max_profit(prices):
+    n = len(prices)
+    if n < 2:
+        return 0
+
+    buy = [-float('inf')] * n
+    sell = [0] * n
+
+    for i in range(n):
+        buy[i] = max(buy[i-1], -prices[i])
+        sell[i] = max(sell[i-1], buy[i-1] + prices[i])
+
+    for i in range(1, n):
+        buy[i] = max(buy[i], sell[i-1] - prices[i])
+        sell[i] = max(sell[i], buy[i] + prices[i])
+
+    return sell[-1]
+
+prices = [1,2,3,4,5,6,7]
+if __name__ == '__main__':
+    print(max_profit(prices))
